@@ -1,0 +1,14 @@
+defaultModel: gemini
+models:
+
+  gpt5:
+    provider: openai
+    model: gpt-5
+
+  claude:
+    provider: anthropic
+    model: claude-sonnet
+
+  gemini:
+    provider: google
+    model: google/gemini-2.5-flash

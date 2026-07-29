@@ -1,0 +1,18 @@
+export const OCR_LANGUAGES = [
+  { code: 'deu', label: 'Deutsch', default: true },
+  { code: 'frk', label: 'Deutsch (Fraktur)', default: true },
+  { code: 'eng', label: 'Englisch', default: true },
+  { code: 'fra', label: 'Französisch' },
+  { code: 'ita', label: 'Italienisch' },
+  { code: 'spa', label: 'Spanisch' },
+  { code: 'nld', label: 'Niederländisch' },
+  { code: 'por', label: 'Portugiesisch' },
+  { code: 'rus', label: 'Russisch' },
+  { code: 'ces', label: 'Tschechisch' },
+  { code: 'pol', label: 'Polnisch' },
+  { code: 'dan', label: 'Dänisch' },
+  { code: 'swe', label: 'Schwedisch' },
+  { code: 'nor', label: 'Norwegisch' },
+  { code: 'fin', label: 'Finnisch' },
+  { code: 'hun', label: 'Ungarisch' },
+];

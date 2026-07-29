@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=Literata:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-sans: 'Literata', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --bg: #ffffff;
+  --bg-secondary: #f7f6f3;
+  --bg-page: #f0ede8;
+  --fg: #1a1916;
+  --fg-muted: #5a5750;
+  --fg-faint: #9a9790;
+  --border-faint: rgba(0,0,0,.09);
+  --border-md: rgba(0,0,0,.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1b19;
+    --bg-secondary: #242320;
+    --bg-page: #141412;
+    --fg: #e8e5df;
+    --fg-muted: #928f88;
+    --fg-faint: #5a5750;
+    --border-faint: rgba(255,255,255,.08);
+    --border-md: rgba(255,255,255,.16);
+  }
+}
+
+body { font-family: var(--font-sans); font-size: 14px; line-height: 1.6; color: var(--fg); background: var(--bg-page); -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+*:focus-visible { outline: 2px solid var(--fg-muted); outline-offset: 2px; }
+
+@keyframes spin     { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes pulse    { 0%,100% { opacity:.4; } 50% { opacity:1; } }
+@keyframes scanline { 0% { top: -4px; } 100% { top: 100%; } }
+@keyframes shimmer  { 0%,100% { opacity:.35; } 50% { opacity:.7; } }
+.running { animation: pulse 1s ease-in-out infinite; }
