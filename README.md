@@ -4,6 +4,8 @@
 
 A browser-based pipeline that transforms scanned concert posters and historical event programs into structured JSON metadata — entirely client-side.
 
+The design brings together **human editing**, **computer-assisted technology**, and **AI-driven technology** to combine the speed and big-data processing capability of AI with the accuracy and contextual understanding of a human editor. Every pipeline step provides room for human review and correction: OCR runs before AI to ground entity detection in real text rather than hallucinated guesses, search results against authority databases can be curated by hand, and all AI decisions are transparent and overridable.
+
 ## How to use
 
 ### Web App (GitHub Pages)
@@ -12,12 +14,11 @@ The app is available at **[https://mitaku-dev.github.io/PosterOCR/](https://mita
 
 ### Desktop App (Electron)
 
-Pre-built installers are available as **downloadable artifacts** from the [GitHub Actions](https://github.com/mitaku-dev/PosterOCR/actions) page:
+Pre-built installers are published as **GitHub Releases** on every successful build:
 
-1. Go to **Actions → Deploy to GitHub Pages → latest run**
-2. Scroll down to **Artifacts**
-3. Download **PosterOCR-Windows** (`.exe` installer) or **PosterOCR-Linux** (`.AppImage` / `.deb`)
-4. Extract and run — no browser or server needed
+- **[Latest Release](https://github.com/mitaku-dev/PosterOCR/releases/latest)** — browse all available downloads
+- **[Windows .exe (direct download)](https://github.com/mitaku-dev/PosterOCR/releases/latest)** — the NSIS installer is listed as an asset on the latest release page
+
 
 ### Build from source
 
