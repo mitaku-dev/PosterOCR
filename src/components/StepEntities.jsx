@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Btn, Badge, Collapsible } from './ui';
+import { Btn, Badge, Collapsible, StepFooter, OptionalBadge } from './ui';
 import { ENTITY_TYPES, TYPE_LABELS, TYPE_COLORS } from '../data/initialState';
 
 // ─── Segment builder ───────────────────────────────────────────────────────────
@@ -255,6 +255,7 @@ function LLMStatusBar({ llmSettings, entityRunning, entityError, entityRawRespon
             : '⊞ Auto-Erkennung starten'
           }
         </button>
+        {!entityRunning && <OptionalBadge />}
 
         {/* Settings button */}
         <button onClick={onOpenSettings}
@@ -330,105 +331,102 @@ export default function StepEntities({
   const counts = ENTITY_TYPES.reduce((acc, t) => { acc[t] = entities.filter(e => e.type === t).length; return acc; }, {});
 
   return (
-    <>
-      <div style={{ background: 'var(--bg)', border: '0.5px solid var(--border-faint)', borderRadius: 12, overflow: 'hidden' }}>
+    <div style={{ background: 'var(--bg)', border: '0.5px solid var(--border-faint)', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 620 }}>
 
-        {/* Header */}
-        <div style={{ padding: '11px 16px', borderBottom: '0.5px solid var(--border-faint)', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>Schritt 2 — Entitätenerkennung</span>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Badge color="blue">{entities.length} Entitäten</Badge>
-            {Object.entries(counts).filter(([, v]) => v > 0).map(([t, v]) => {
-              const c = TYPE_COLORS[t];
-              return <span key={t} style={{ fontSize: 11, padding: '2px 7px', borderRadius: 10, background: c.bg, color: c.text, fontWeight: 500 }}>{TYPE_LABELS[t].split(/[\s/]/)[0]} {v}</span>;
-            })}
-          </div>
+      {/* Header */}
+      <div style={{ padding: '11px 16px', borderBottom: '0.5px solid var(--border-faint)', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>Schritt 2 — Entitätenerkennung</span>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Badge color="blue">{entities.length} Entitäten</Badge>
+          {Object.entries(counts).filter(([, v]) => v > 0).map(([t, v]) => {
+            const c = TYPE_COLORS[t];
+            return <span key={t} style={{ fontSize: 11, padding: '2px 7px', borderRadius: 10, background: c.bg, color: c.text, fontWeight: 500 }}>{TYPE_LABELS[t].split(/[\s/]/)[0]} {v}</span>;
+          })}
+        </div>
+      </div>
+
+      {/* Split pane */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1, overflow: 'hidden' }}>
+
+        {/* LEFT — highlighted OCR text */}
+        <div style={{ borderRight: '0.5px solid var(--border-faint)', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+          <HighlightedText text={ocrText} setText={setOcrText} entities={entities} addEntity={addEntity} activeEntityId={activeId} setActiveEntityId={setActiveId} />
         </div>
 
-        {/* Split pane */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 580 }}>
+        {/* RIGHT — LLM bar + entity list */}
+        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
 
-          {/* LEFT — highlighted OCR text */}
-          <div style={{ borderRight: '0.5px solid var(--border-faint)', display: 'flex', flexDirection: 'column' }}>
-            <HighlightedText text={ocrText} setText={setOcrText} entities={entities} addEntity={addEntity} activeEntityId={activeId} setActiveEntityId={setActiveId} />
+          {/* LLM status + detect button */}
+          <LLMStatusBar
+            llmSettings={llmSettings}
+            entityRunning={entityRunning}
+            entityError={entityError}
+            entityRawResponse={entityRawResponse}
+            onDetect={() => runEntityDetection(llmSettings)}
+            onOpenSettings={onOpenSettings}
+          />
+
+          {/* Alias/context rules */}
+          <div style={{ padding: '9px 14px', borderBottom: '0.5px solid var(--border-faint)', background: 'var(--bg-secondary)' }}>
+            <Collapsible label="Kontext & Alias-Regeln" badge={`${contextMappings.length} aktiv`}>
+              <div style={{ paddingTop: 6 }}>
+                <AliasEditor rows={contextMappings} setRows={setContextMappings} />
+              </div>
+            </Collapsible>
           </div>
 
-          {/* RIGHT — LLM bar + entity list */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-
-            {/* LLM status + detect button */}
-            <LLMStatusBar
-              llmSettings={llmSettings}
-              entityRunning={entityRunning}
-              entityError={entityError}
-              entityRawResponse={entityRawResponse}
-              onDetect={() => runEntityDetection(llmSettings)}
-              onOpenSettings={onOpenSettings}
-            />
-
-            {/* Alias/context rules */}
-            <div style={{ padding: '9px 14px', borderBottom: '0.5px solid var(--border-faint)', background: 'var(--bg-secondary)' }}>
-              <Collapsible label="Kontext & Alias-Regeln" badge={`${contextMappings.length} aktiv`}>
-                <div style={{ paddingTop: 6 }}>
-                  <AliasEditor rows={contextMappings} setRows={setContextMappings} />
-                </div>
-              </Collapsible>
+          {/* Scrollable entity list */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
+            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>
+              Erkannte Entitäten
             </div>
 
-            {/* Scrollable entity list */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
-              <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>
-                Erkannte Entitäten
+            {entities.length === 0 && !entityRunning && (
+              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--fg-faint)', fontSize: 12 }}>
+                Noch keine Entitäten — Auto-Erkennung starten oder manuell hinzufügen
               </div>
+            )}
 
-              {entities.length === 0 && !entityRunning && (
-                <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--fg-faint)', fontSize: 12 }}>
-                  Noch keine Entitäten — Auto-Erkennung starten oder manuell hinzufügen
-                </div>
-              )}
-
-              {entityRunning && (
-                <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 12 }}>
-                  <div style={{ fontSize: 20, animation: 'spin .8s linear infinite', display: 'inline-block', marginBottom: 8 }}>⟳</div>
-                  <div>LLM analysiert den Text …</div>
-                  <div style={{ fontSize: 11, color: 'var(--fg-faint)', marginTop: 4 }}>{llmSettings.providerInfo?.name} · {llmSettings.model}</div>
-                </div>
-              )}
-
-              {!entityRunning && entities.map(e => (
-                <EntityRow key={e.id} entity={e} active={activeId === e.id}
-                  onActivate={() => setActiveId(id => id === e.id ? null : e.id)}
-                  onUpdate={ch => updateEntity(e.id, ch)}
-                  onRemove={() => { removeEntity(e.id); if (activeId === e.id) setActiveId(null); }}
-                />
-              ))}
-
-              {/* Manual add */}
-              <div style={{ marginTop: 10, paddingTop: 10, borderTop: '0.5px solid var(--border-faint)' }}>
-                <div style={{ fontSize: 11, color: 'var(--fg-faint)', marginBottom: 5 }}>Manuell hinzufügen:</div>
-                <div style={{ display: 'flex', gap: 5 }}>
-                  <input value={newName} onChange={e => setNewName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && newName) { addEntity(newName, newType); setNewName(''); } }}
-                    placeholder="Name …"
-                    style={{ flex: 1, fontSize: 12, padding: '5px 8px', borderRadius: 6, border: '0.5px solid var(--border-md)', background: 'var(--bg)', color: 'var(--fg)', fontFamily: 'inherit', outline: 'none' }} />
-                  <select value={newType} onChange={e => setNewType(e.target.value)}
-                    style={{ fontSize: 11, padding: '5px 4px', borderRadius: 6, width: 108, border: '0.5px solid var(--border-md)', background: 'var(--bg-secondary)', color: 'var(--fg)', fontFamily: 'inherit', outline: 'none' }}>
-                    {ENTITY_TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
-                  </select>
-                  <button onClick={() => { if (newName) { addEntity(newName, newType); setNewName(''); } }}
-                    style={{ padding: '5px 11px', borderRadius: 6, fontSize: 13, border: '0.5px solid var(--border-md)', background: 'var(--bg-secondary)', color: 'var(--fg)', cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
-                </div>
+            {entityRunning && (
+              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 12 }}>
+                <div style={{ fontSize: 20, animation: 'spin .8s linear infinite', display: 'inline-block', marginBottom: 8 }}>⟳</div>
+                <div>LLM analysiert den Text …</div>
+                <div style={{ fontSize: 11, color: 'var(--fg-faint)', marginTop: 4 }}>{llmSettings.providerInfo?.name} · {llmSettings.model}</div>
               </div>
-            </div>
+            )}
 
-            {/* Footer */}
-            <div style={{ padding: '11px 14px', borderTop: '0.5px solid var(--border-faint)', background: 'var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Btn onClick={goBack}>← OCR</Btn>
-              <Btn variant="primary" onClick={() => advance(1)}>Weiter zu Musixplora →</Btn>
+            {!entityRunning && entities.map(e => (
+              <EntityRow key={e.id} entity={e} active={activeId === e.id}
+                onActivate={() => setActiveId(id => id === e.id ? null : e.id)}
+                onUpdate={ch => updateEntity(e.id, ch)}
+                onRemove={() => { removeEntity(e.id); if (activeId === e.id) setActiveId(null); }}
+              />
+            ))}
+
+            {/* Manual add */}
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '0.5px solid var(--border-faint)' }}>
+              <div style={{ fontSize: 11, color: 'var(--fg-faint)', marginBottom: 5 }}>Manuell hinzufügen:</div>
+              <div style={{ display: 'flex', gap: 5 }}>
+                <input value={newName} onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && newName) { addEntity(newName, newType); setNewName(''); } }}
+                  placeholder="Name …"
+                  style={{ flex: 1, fontSize: 12, padding: '5px 8px', borderRadius: 6, border: '0.5px solid var(--border-md)', background: 'var(--bg)', color: 'var(--fg)', fontFamily: 'inherit', outline: 'none' }} />
+                <select value={newType} onChange={e => setNewType(e.target.value)}
+                  style={{ fontSize: 11, padding: '5px 4px', borderRadius: 6, width: 108, border: '0.5px solid var(--border-md)', background: 'var(--bg-secondary)', color: 'var(--fg)', fontFamily: 'inherit', outline: 'none' }}>
+                  {ENTITY_TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+                </select>
+                <button onClick={() => { if (newName) { addEntity(newName, newType); setNewName(''); } }}
+                  style={{ padding: '5px 11px', borderRadius: 6, fontSize: 13, border: '0.5px solid var(--border-md)', background: 'var(--bg-secondary)', color: 'var(--fg)', cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </>
+
+      <StepFooter
+        left={<Btn onClick={goBack}>← OCR</Btn>}
+        right={<Btn variant="primary" onClick={() => advance(1)}>Weiter zu Musixplora →</Btn>}
+      />
+    </div>
   );
 }

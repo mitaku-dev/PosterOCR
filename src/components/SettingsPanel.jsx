@@ -13,6 +13,7 @@ export default function SettingsPanel({
   aliases, setAliases,
   preferredJobs, setPreferredJobs,
   llmSettings,
+  theme,
   onClose,
 }) {
   const [tab, setTab] = useState('llm');
@@ -54,6 +55,7 @@ export default function SettingsPanel({
             { id: 'aliases', label: 'Schreibvarianten' },
             { id: 'jobs',    label: 'Berufe' },
             { id: 'llm',     label: 'LLM' },
+            { id: 'design',  label: 'Design' },
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               padding: '9px 14px', fontSize: 12, fontWeight: tab === t.id ? 600 : 400,
@@ -124,6 +126,40 @@ export default function SettingsPanel({
                 placeholder="Beruf hinzufügen …"
                 onAdd={v => { if (v && !preferredJobs.includes(v)) setPreferredJobs(prev => [...prev, v]); }}
               />
+            </>
+          )}
+
+          {tab === 'design' && (
+            <>
+              <SectionLabel>Erscheinungsbild</SectionLabel>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+                {[
+                  { id: 'light', label: 'Hell', icon: '☀' },
+                  { id: 'dark', label: 'Dunkel', icon: '☾' },
+                  { id: 'system', label: 'System', icon: '⚙' },
+                ].map(t => (
+                  <button key={t.id} onClick={() => theme.setMode(t.id)} style={{
+                    flex: 1, padding: '12px 8px', borderRadius: 8, fontSize: 12,
+                    fontWeight: theme.mode === t.id ? 600 : 400,
+                    border: theme.mode === t.id ? '0.5px solid #185FA5' : '0.5px solid var(--border-faint)',
+                    background: theme.mode === t.id ? '#185FA511' : 'transparent',
+                    color: theme.mode === t.id ? '#185FA5' : 'var(--fg-muted)',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                    transition: 'all .15s',
+                  }}>
+                    <span style={{ fontSize: 20 }}>{t.icon}</span>
+                    <span>{t.label}</span>
+                  </button>
+                ))}
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
+                {theme.mode === 'system'
+                  ? 'Folgt dem System-Farbschema (Hell/Dunkel).'
+                  : theme.mode === 'dark'
+                    ? 'Dunkles Farbschema — manuell gewählt.'
+                    : 'Helles Farbschema — manuell gewählt.'}
+              </p>
             </>
           )}
 

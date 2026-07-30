@@ -153,5 +153,33 @@ export function Collapsible({ label, badge, children }) {
   );
 }
 
+export function StepFooter({ left, right, style }) {
+  return (
+    <div style={{
+      padding: '11px 16px', borderTop: '0.5px solid var(--border-faint)',
+      background: 'var(--bg-secondary)',
+      display: 'flex', justifyContent: !left || !right ? 'flex-end' : 'space-between',
+      alignItems: 'center',
+      ...style,
+    }}>
+      {left && <div>{left}</div>}
+      {right && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{right}</div>}
+    </div>
+  );
+}
+
+export function OptionalBadge() {
+  return (
+    <span style={{
+      fontSize: 10, padding: '1px 6px', borderRadius: 6,
+      border: '0.5px solid var(--border-faint)', color: 'var(--fg-faint)',
+      background: 'var(--bg-secondary)', fontStyle: 'italic',
+      verticalAlign: 'middle',
+    }}>
+      optional
+    </span>
+  );
+}
+
 // inject React into scope since this file is imported as a module
 import React from 'react';

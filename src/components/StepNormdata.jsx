@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Btn, Badge, Divider, SectionLabel, EntityTag } from './ui';
+import { Btn, Badge, Divider, SectionLabel, EntityTag, StepFooter, OptionalBadge } from './ui';
 import { TYPE_COLORS } from '../data/initialState';
 import { aiNormdataMatch } from '../services/aiMatchingService';
 
@@ -32,7 +32,7 @@ const SOURCE_CFG = {
   Wikidata: { bg: '#EEEDFE', color: '#3C3489', label: 'Wikidata', dot: '#7F77DD' },
 };
 
-function SourceBadge({ source, small }) {
+export function SourceBadge({ source, small }) {
   const c = SOURCE_CFG[source] || { bg: '#F1EFE8', color: '#444441', label: source, dot: '#888' };
   return (
     <span style={{
@@ -44,7 +44,7 @@ function SourceBadge({ source, small }) {
   );
 }
 
-function ScorePill({ score, breakdown }) {
+export function ScorePill({ score, breakdown }) {
   const [showPopup, setShowPopup] = useState(false);
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
   const pillRef = useRef(null);
@@ -108,7 +108,7 @@ function ScorePill({ score, breakdown }) {
 
 // ─── External links for each source ──────────────────────────────────────────
 
-function buildLinks(result) {
+export function buildLinks(result) {
   const links = [];
 
   if (result.source === 'GND') {
@@ -137,8 +137,8 @@ function buildLinks(result) {
 
 // ─── Score explanation tooltip ────────────────────────────────────────────────
 
-function ScoreExplanation({ result, context, isComposer }) {
-  const { eventYear, placeHints } = context;
+export function ScoreExplanation({ result, context, isComposer }) {
+  const { eventYear, placeHints = [] } = context || {};
   const notes = [];
 
   const birthYear = result.birth ? parseInt(result.birth, 10) : null;
@@ -186,7 +186,7 @@ function ScoreExplanation({ result, context, isComposer }) {
 
 // ─── Result card ──────────────────────────────────────────────────────────────
 
-function ResultCard({ result, selected, context, onSelect, isComposer, preferredJobs }) {
+export function ResultCard({ result, selected, context, onSelect, isComposer, preferredJobs }) {
   const [expanded, setExpanded] = useState(false);
   const links = buildLinks(result);
 
@@ -424,30 +424,33 @@ function SearchPopup({ entity, normData, context, onSearch, onSelect, onClose, i
               }
             </button>
             {results.length > 0 && !selected && !isSearching && (
-              <button onClick={async () => {
-                if (aiMatching) return;
-                setAiMatching(true);
-                try {
-                  const idx = await aiNormdataMatch(entity, ocrText || '', results, llmSettings);
-                  if (idx !== null && idx !== undefined && results[idx]) {
-                    onSelect(results[idx]);
-                    onClose();
+              <>
+                <button onClick={async () => {
+                  if (aiMatching) return;
+                  setAiMatching(true);
+                  try {
+                    const idx = await aiNormdataMatch(entity, ocrText || '', results, llmSettings);
+                    if (idx !== null && idx !== undefined && results[idx]) {
+                      onSelect(results[idx]);
+                      onClose();
+                    }
+                  } catch (err) {
+                    if (onAiError) onAiError({ message: err.message, source: 'KI-Match (Normdaten)' });
+                  } finally {
+                    setAiMatching(false);
                   }
-                } catch (err) {
-                  if (onAiError) onAiError({ message: err.message, source: 'KI-Match (Normdaten)' });
-                } finally {
-                  setAiMatching(false);
-                }
-              }} style={{
-                padding: '6px 13px', borderRadius: 7, fontSize: 12, fontWeight: 500,
-                border: '0.5px solid #185FA5',
-                background: aiMatching ? 'var(--bg-secondary)' : '#185FA511',
-                color: aiMatching ? 'var(--fg-muted)' : '#185FA5',
-                cursor: aiMatching ? 'wait' : 'pointer',
-                fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
-              }}>
-                {aiMatching ? '⟳ KI sucht …' : '🤖 KI-Match'}
-              </button>
+                }} style={{
+                  padding: '6px 13px', borderRadius: 7, fontSize: 12, fontWeight: 500,
+                  border: '0.5px solid #185FA5',
+                  background: aiMatching ? 'var(--bg-secondary)' : '#185FA511',
+                  color: aiMatching ? 'var(--fg-muted)' : '#185FA5',
+                  cursor: aiMatching ? 'wait' : 'pointer',
+                  fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
+                }}>
+                  {aiMatching ? '⟳ KI sucht …' : '🤖 KI-Match'}
+                </button>
+                <OptionalBadge />
+              </>
             )}
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--fg-muted)', padding: '2px 4px', lineHeight: 1 }}>×</button>
           </div>
@@ -629,7 +632,7 @@ export default function StepNormdata({
         />
       )}
 
-      <div style={{ background: 'var(--bg)', border: '0.5px solid var(--border-faint)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg)', border: '0.5px solid var(--border-faint)', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 620 }}>
         <div style={{ padding: '11px 16px', borderBottom: '0.5px solid var(--border-faint)', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>Schritt 4 — Normdaten</span>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -638,7 +641,7 @@ export default function StepNormdata({
           </div>
         </div>
 
-        <div style={{ padding: 20 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
           {/* Context info banner */}
           {(context.eventYear || context.placeHints.length > 0) && (
             <div style={{ marginBottom: 14, padding: '8px 12px', borderRadius: 8, background: 'var(--bg-secondary)', border: '0.5px solid var(--border-faint)', fontSize: 12, color: 'var(--fg-muted)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -672,14 +675,12 @@ export default function StepNormdata({
               ))}
             </div>
           )}
-
-          <Divider />
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '0.5px solid var(--border-faint)' }}>
-            <Btn onClick={goBack}>← Musixplora</Btn>
-            <Btn variant="primary" onClick={() => advance(3)}>Weiter zu Export →</Btn>
-          </div>
         </div>
+
+        <StepFooter
+          left={<Btn onClick={goBack}>← Musixplora</Btn>}
+          right={<Btn variant="primary" onClick={() => advance(3)}>Weiter zu Export →</Btn>}
+        />
       </div>
     </>
   );

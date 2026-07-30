@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Card, CardHeader, Btn, Badge, Divider, SectionLabel, EntityTag } from './ui';
+import { Card, CardHeader, Btn, Badge, Divider, SectionLabel, EntityTag, StepFooter } from './ui';
 import { TYPE_COLORS } from '../data/initialState';
 
 const SOURCE_CFG = {
@@ -152,7 +152,7 @@ export default function StepReview({
   }, [entities, matches, normResults]);
 
   return (
-    <Card>
+    <Card style={{ display: 'flex', flexDirection: 'column', minHeight: 620 }}>
       <CardHeader
         left="Schritt 5 — Export"
         right={
@@ -164,7 +164,7 @@ export default function StepReview({
         }
       />
 
-      <div style={{ padding: 20 }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
         {/* Summary */}
         <SectionLabel>Pipeline-Übersicht</SectionLabel>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -265,15 +265,16 @@ export default function StepReview({
             )}
           </div>
         )}
+      </div>
 
-        {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '0.5px solid var(--border-faint)' }}>
-          <Btn onClick={goBack}>← Normdaten</Btn>
+      <StepFooter
+        left={<Btn onClick={goBack}>← Normdaten</Btn>}
+        right={
           <Btn variant="primary" onClick={exportFormat === 'json' ? downloadJson : downloadMusXplora}>
             ↓ {exportFormat === 'json' ? 'JSON' : 'musXplora'} exportieren
           </Btn>
-        </div>
-      </div>
+        }
+      />
     </Card>
   );
 }

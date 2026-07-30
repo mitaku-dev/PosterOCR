@@ -9,19 +9,23 @@ import SettingsPanel from './components/SettingsPanel';
 import FirstSetupModal from './components/FirstSetupModal';
 import AutoModeErrorModal from './components/AutoModeErrorModal';
 import AiErrorModal from './components/AiErrorModal';
+import EntitySearchModal from './components/EntitySearchModal';
 import SessionSidebar from './components/SessionSidebar';
 import { usePipelineState } from './hooks/usePipelineState';
 import { useLLMSettings } from './hooks/useLLMSettings';
 import { useSessions } from './hooks/useSessions';
 import { useAutoMode } from './hooks/useAutoMode';
+import useTheme from './hooks/useTheme';
 
 export default function App() {
   const state       = usePipelineState();
   const llmSettings = useLLMSettings();
   const sessions    = useSessions(state);
   const autoMode    = useAutoMode(sessions.activeId, state, llmSettings);
+  const theme       = useTheme();
   const isWide = state.step === 0 || state.step === 1;
   const [showSettings, setShowSettings] = useState(false);
+  const [showEntitySearch, setShowEntitySearch] = useState(false);
   const [showFirstSetup, setShowFirstSetup] = useState(!llmSettings.hasAnyKeys);
   const [aiError, setAiError] = useState(null);
   const autoErrorShown = useRef(null);
@@ -114,6 +118,7 @@ export default function App() {
           aliases={state.aliases} setAliases={state.setAliases}
           preferredJobs={state.preferredJobs} setPreferredJobs={state.setPreferredJobs}
           llmSettings={llmSettings}
+          theme={theme}
           onClose={() => setShowSettings(false)}
         />
       )}
@@ -129,6 +134,10 @@ export default function App() {
 
       {aiError && (
         <AiErrorModal error={aiError} onClose={() => setAiError(null)} />
+      )}
+
+      {showEntitySearch && (
+        <EntitySearchModal onClose={() => setShowEntitySearch(false)} />
       )}
 
       <div style={{ flex: 1, padding: '28px 24px', overflow: 'auto', minWidth: 0 }}>
@@ -171,6 +180,17 @@ export default function App() {
                 {autoMode.running ? '✕ Auto-Modus beenden' : '▶ Auto-Modus'}
               </button>
 
+              <button
+                onClick={() => setShowEntitySearch(true)}
+                style={{
+                  padding: '5px 11px', borderRadius: 7, fontSize: 12,
+                  border: '0.5px solid var(--border-md)', background: 'transparent',
+                  color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                ⌕ Suche
+              </button>
               <button
                 onClick={() => setShowSettings(true)}
                 style={{

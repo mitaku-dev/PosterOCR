@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Btn, Badge } from './ui';
+import { Btn, Badge, StepFooter, OptionalBadge } from './ui';
 import { OCR_LANGUAGES } from '../data/languages';
 
 // ─── OCR progress steps ───────────────────────────────────────────────────────
@@ -234,14 +234,17 @@ function TextPane({ ocrText, setOcrText, ocrRunning, stepDone, onFixOcr, fixingO
           <span style={{ fontSize: 11, color: '#1D9E75' }}>✓ Erkannt</span>
         )}
         {ocrText && !ocrRunning && (
-          <button onClick={onFixOcr} disabled={fixingOcr} style={{
-            fontSize: 11, padding: '3px 9px', borderRadius: 5,
-            border: '0.5px solid var(--border-md)', background: '#185FA511',
-            color: fixingOcr ? 'var(--fg-faint)' : '#185FA5',
-            cursor: fixingOcr ? 'wait' : 'pointer', fontFamily: 'inherit',
-          }}>
-            {fixingOcr ? '⟳ KI bereinigt …' : 'Mit KI bereinigen'}
-          </button>
+          <>
+            <button onClick={onFixOcr} disabled={fixingOcr} style={{
+              fontSize: 11, padding: '3px 9px', borderRadius: 5,
+              border: '0.5px solid var(--border-md)', background: '#185FA511',
+              color: fixingOcr ? 'var(--fg-faint)' : '#185FA5',
+              cursor: fixingOcr ? 'wait' : 'pointer', fontFamily: 'inherit',
+            }}>
+              {fixingOcr ? '⟳ KI bereinigt …' : 'Mit KI bereinigen'}
+            </button>
+            <OptionalBadge />
+          </>
         )}
         {ocrText && (
           <span style={{ fontSize: 11, color: 'var(--fg-faint)', fontVariantNumeric: 'tabular-nums' }}>
@@ -467,7 +470,7 @@ export default function StepOCR({
   }
 
   return (
-    <div style={{ background: 'var(--bg)', border: '0.5px solid var(--border-faint)', borderRadius: 12, overflow: 'hidden' }}>
+    <div style={{ background: 'var(--bg)', border: '0.5px solid var(--border-faint)', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 620 }}>
 
       {/* Header */}
       <div style={{
@@ -641,7 +644,7 @@ export default function StepOCR({
       )}
 
       {/* Split pane */}
-      <div style={{ display: 'grid', gridTemplateColumns: imagePreview ? '1fr 1fr' : '1fr', minHeight: 560 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: imagePreview ? '1fr 1fr' : '1fr', flex: 1, overflow: 'hidden' }}>
 
           {/* LEFT — image */}
         {imagePreview ? (
@@ -686,26 +689,25 @@ export default function StepOCR({
         )}
       </div>
 
-      {/* Footer */}
-      <div style={{
-        padding: '11px 16px', borderTop: '0.5px solid var(--border-faint)',
-        background: 'var(--bg-secondary)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-          {!imagePreview && 'Bild hochladen um fortzufahren'}
-          {imagePreview && !stepDone[0] && !ocrRunning && (
-            hasActivePreprocessing
-              ? 'Vorverarbeitet — OCR starten oder Text manuell eingeben'
-              : 'OCR starten oder Text manuell eingeben'
-          )}
-          {ocrRunning && <span style={{ color: '#60d0a0', animation: 'pulse 1s infinite' }}>OCR läuft — {progress}% abgeschlossen</span>}
-          {stepDone[0] && !ocrRunning && '✓ Text erkannt — bitte prüfen und ggf. korrigieren'}
-        </span>
-        <Btn variant="primary" onClick={() => advance(0)} disabled={!imagePreview}>
-          Weiter zu Entitäten →
-        </Btn>
-      </div>
+      <StepFooter
+        left={
+          <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
+            {!imagePreview && 'Bild hochladen um fortzufahren'}
+            {imagePreview && !stepDone[0] && !ocrRunning && (
+              hasActivePreprocessing
+                ? 'Vorverarbeitet — OCR starten oder Text manuell eingeben'
+                : 'OCR starten oder Text manuell eingeben'
+            )}
+            {ocrRunning && <span style={{ color: '#60d0a0', animation: 'pulse 1s infinite' }}>OCR läuft — {progress}% abgeschlossen</span>}
+            {stepDone[0] && !ocrRunning && '✓ Text erkannt — bitte prüfen und ggf. korrigieren'}
+          </span>
+        }
+        right={
+          <Btn variant="primary" onClick={() => advance(0)} disabled={!imagePreview}>
+            Weiter zu Entitäten →
+          </Btn>
+        }
+      />
     </div>
   );
 }

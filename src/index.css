@@ -2,7 +2,8 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
+:root,
+[data-theme="light"] {
   --font-sans: 'Literata', Georgia, serif;
   --font-mono: 'IBM Plex Mono', monospace;
   --bg: #ffffff;
@@ -15,8 +16,19 @@
   --border-md: rgba(0,0,0,.18);
 }
 
+[data-theme="dark"] {
+  --bg: #1c1b19;
+  --bg-secondary: #242320;
+  --bg-page: #141412;
+  --fg: #e8e5df;
+  --fg-muted: #928f88;
+  --fg-faint: #5a5750;
+  --border-faint: rgba(255,255,255,.08);
+  --border-md: rgba(255,255,255,.16);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #1c1b19;
     --bg-secondary: #242320;
     --bg-page: #141412;

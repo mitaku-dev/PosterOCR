@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { Card, CardHeader, Btn, Badge, ScoreBadge, Divider, SectionLabel, EntityTag } from './ui';
+import { Card, CardHeader, Btn, Badge, ScoreBadge, Divider, SectionLabel, EntityTag, StepFooter, OptionalBadge } from './ui';
 import { TYPE_COLORS } from '../data/initialState';
 import { aiMusixploraMatch } from '../services/aiMatchingService';
 
@@ -24,7 +24,7 @@ const SCORE_WEIGHTS = [
   { label: 'Datumsnähe',       pct: 20, color: '#BA7517' },
 ];
 
-function DetailPreview({ detail }) {
+export function DetailPreview({ detail }) {
   if (!detail) return null;
   const fields = Object.entries(detail).filter(([k, v]) => k !== 'name' && v != null && v !== '' && !(Array.isArray(v) && v.length === 0) && !(typeof v === 'object' && v !== null && Object.keys(v).length === 0));
   if (fields.length === 0) return <div style={{ fontSize: 11, color: 'var(--fg-faint)', fontStyle: 'italic' }}>Keine Detaildaten verfügbar</div>;
@@ -57,7 +57,7 @@ function DetailPreview({ detail }) {
   );
 }
 
-function ScoreDetails({ breakdown, isComposer }) {
+export function ScoreDetails({ breakdown, isComposer }) {
   if (!breakdown) return null;
   const items = isComposer
     ? [{ label: 'Name', value: breakdown.nameScore, max: 100 }]
@@ -116,7 +116,7 @@ function SearchInfoBadge({ searchInfo }) {
   );
 }
 
-function MatchCard({ result, selected, onClick, isComposer, context, preferredJobs }) {
+export function MatchCard({ result, selected, onClick, isComposer, context, preferredJobs }) {
   const [showHover, setShowHover] = useState(false);
   const cardRef = useRef(null);
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
@@ -492,30 +492,33 @@ function EntitySection({ entity, matchData, onSelect, onSetStatus, onFallbackSea
                     </div>
                   )}
                   {sortedResults.length > 0 && (
-                    <div
-                      onClick={async () => {
-                        if (aiMatching) return;
-                        setAiMatching(true);
-                        try {
-                          const idx = await aiMusixploraMatch(entity, ocrText || '', sortedResults, llmSettings);
-                          if (idx !== null && idx !== undefined && sortedResults[idx]) {
-                            onSelect(idx);
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                      <div
+                        onClick={async () => {
+                          if (aiMatching) return;
+                          setAiMatching(true);
+                          try {
+                            const idx = await aiMusixploraMatch(entity, ocrText || '', sortedResults, llmSettings);
+                            if (idx !== null && idx !== undefined && sortedResults[idx]) {
+                              onSelect(idx);
+                            }
+                          } catch (err) {
+                            if (onAiError) onAiError({ message: err.message, source: 'KI-Match (Musixplora)' });
+                          } finally {
+                            setAiMatching(false);
                           }
-                        } catch (err) {
-                          if (onAiError) onAiError({ message: err.message, source: 'KI-Match (Musixplora)' });
-                        } finally {
-                          setAiMatching(false);
-                        }
-                      }}
-                      style={{
-                        padding: '8px 12px', borderRadius: 8, cursor: aiMatching ? 'wait' : 'pointer',
-                        border: '0.5px dashed #185FA5', fontSize: 12,
-                        color: aiMatching ? 'var(--fg-muted)' : '#185FA5',
-                        marginBottom: 5, transition: 'all .15s',
-                        background: aiMatching ? 'var(--bg-secondary)' : '#185FA511',
-                      }}
-                    >
-                      {aiMatching ? '⟳ KI sucht besten Treffer …' : '🤖 KI-Match — besten Treffer automatisch wählen'}
+                        }}
+                        style={{
+                          flex: 1, padding: '8px 12px', borderRadius: 8, cursor: aiMatching ? 'wait' : 'pointer',
+                          border: '0.5px dashed #185FA5', fontSize: 12,
+                          color: aiMatching ? 'var(--fg-muted)' : '#185FA5',
+                          transition: 'all .15s',
+                          background: aiMatching ? 'var(--bg-secondary)' : '#185FA511',
+                        }}
+                      >
+                        {aiMatching ? '⟳ KI sucht besten Treffer …' : '🤖 KI-Match — besten Treffer automatisch wählen'}
+                      </div>
+                      <OptionalBadge />
                     </div>
                   )}
                   {visibleResults.map((r, ri) => (
@@ -605,7 +608,7 @@ export default function StepMusixplora({
   const context = useMemo(() => extractContext(entities), [entities]);
 
   return (
-    <Card>
+    <Card style={{ display: 'flex', flexDirection: 'column', minHeight: 620 }}>
       <CardHeader
         left="Schritt 3 — Musixplora-Suche"
         right={
@@ -619,7 +622,7 @@ export default function StepMusixplora({
         }
       />
 
-      <div style={{ padding: 20 }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
 
         {/* Search progress bar */}
         {searchRunning && searchProgress.total > 0 && (
@@ -669,7 +672,7 @@ export default function StepMusixplora({
 
         {/* Per-entity results */}
         <SectionLabel>Suchergebnisse pro Entität</SectionLabel>
-        <div style={{ maxHeight: 380, overflowY: 'auto', paddingRight: 2 }}>
+        <div style={{ overflow: 'auto', paddingRight: 2 }}>
           {entities.map((ent, i) => {
             const md = matches[ent.id];
             if (!md) return null;
@@ -692,13 +695,12 @@ export default function StepMusixplora({
             );
           })}
         </div>
-
-        {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '0.5px solid var(--border-faint)' }}>
-          <Btn onClick={goBack}>← Entitäten</Btn>
-          <Btn variant="primary" onClick={() => advance(2)}>Weiter zu Normdaten →</Btn>
-        </div>
       </div>
+
+      <StepFooter
+        left={<Btn onClick={goBack}>← Entitäten</Btn>}
+        right={<Btn variant="primary" onClick={() => advance(2)}>Weiter zu Normdaten →</Btn>}
+      />
     </Card>
   );
 }
