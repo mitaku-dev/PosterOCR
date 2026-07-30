@@ -1,4 +1,4 @@
-# Musixplora Pipeline
+# PosterOCR — Musixplora Pipeline
 
 **OCR · Entity Detection · Database Matching · Authority Data Export**
 
@@ -8,7 +8,7 @@ A browser-based pipeline that transforms scanned concert posters and historical 
 
 ```
 [Poster Image] → [OCR] → [LLM Entity Extraction] → [Music DB Match] → [Authority Enrichment] → [JSON Export]
-     Step 0         Step 0           Step 1                  Step 2                    Step 3             Step 3
+     Step 0         Step 0           Step 1                  Step 2                    Step 3             Step 4
 ```
 
 ### Step 0 — OCR
@@ -17,6 +17,7 @@ Upload an image (drag & drop or file picker), select a language, and run Tessera
 - 16 languages supported, grouped by download status
 - Abortable via worker termination
 - 120-second timeout prevents hanging on failed downloads
+- Optional OCR-fix via LLM (cleans recognition errors)
 
 ### Step 1 — Entity Detection
 Send the OCR text to a configurable LLM to extract entities (people, groups, places, dates, events). Results can be reviewed, edited, added to, or removed.
@@ -26,19 +27,34 @@ Send the OCR text to a configurable LLM to extract entities (people, groups, pla
 - Highlighted text view with click-to-select interaction
 
 ### Step 2 — Database Matching (Musixplora)
-Search entities against the live [Musixplora](https://musixplora.de/) database. Each entity type is mapped to the appropriate search tab (personen → Personen, groups → Institutionen, places → Orte, events → Ereignisse). Alias/variant rules are applied to search queries before sending.
+Search entities against the live [Musixplora](https://musixplora.de/) database. Each entity type is mapped to the appropriate search tab.
 
 - Real-time search against Musixplora's REST API
 - Entity type → search tab mapping with fallback
 - Variant alias rules (character replacements, etc.)
-- Status tracking: matched, no match, skip
+- Scoring: name similarity (80%) + date plausibility (20%) + job bonus (+10)
+- AI-assisted match selection (optional)
+- Fallback surname-only search for persons
 
-### Step 3 — Authority Data & Export
-Enrich entities with authority data from GND (lobid.org), VIAF, and Wikidata. Each result is scored (0–100) based on date plausibility, place hints, and data richness.
+### Step 3 — Authority Data (GND / VIAF / Wikidata)
+Enrich entities with authority data. Each result is scored (0–100) based on date plausibility, place hints, and name variants.
 
-- Cross-source deduplication (VIAF ↔ GND)
-- Detailed score explanations
-- JSON export with Musixplora IDs and authority references
+- Cross-source deduplication (VIAF ↔ GND ↔ Wikidata)
+- Detailed score breakdowns
+- External links to GND, VIAF, and Wikidata
+- AI-assisted match selection (optional)
+
+### Step 4 — Export
+Review all matched and enriched data, then export as JSON with Musixplora IDs and authority references.
+
+## Features
+
+- **Entity Search Modal** — standalone search tool (`⌕ Suche` in the header) to query Musixplora and Normdata directly without going through the pipeline
+- **Session Management** — save/load/rename/delete pipeline sessions (localStorage)
+- **Auto Mode** — run the full pipeline automatically with progress tracking
+- **Settings Panel** — configure alias rules, preferred jobs (for scoring bonuses), LLM providers, theme
+- **Dark / Light / System Theme**
+- **AI Match** — optional LLM-assisted best-match selection for both Musixplora and Normdata
 
 ## Tech Stack
 
@@ -65,8 +81,15 @@ The dev server starts at `http://localhost:5173`.
 ### Build
 
 ```bash
-npm run build
-npm run preview
+npm run build        # production build → dist/
+npm run preview      # preview the production build locally
+```
+
+### Electron Desktop App (optional)
+
+```bash
+npm run dev:electron     # dev mode with Electron window
+npm run build:electron   # package as Electron installer (requires build tools)
 ```
 
 ## Configuration
@@ -83,11 +106,16 @@ API keys are configured in the UI via the settings modal and persisted to localS
 | Mistral AI | Yes | Standard `Authorization: Bearer` |
 | Ollama | No | Connects to local instance, configurable base URL |
 
-A `.env` file is provided for reference (not required at runtime — keys are entered in the UI).
+Multiple API keys per provider are supported with automatic fallback on quota errors.
 
 ### OCR Languages
 
-16 languages are available: German, German Fraktur (`frk`), English, French, Italian, Spanish, Dutch, Portuguese, Russian, Czech, Polish, Danish, Swedish, Norwegian, Finnish, Hungarian. Downloaded languages are tracked in localStorage and displayed in a separate group.
+16 languages: German, German Fraktur (`frk`), English, French, Italian, Spanish, Dutch, Portuguese, Russian, Czech, Polish, Danish, Swedish, Norwegian, Finnish, Hungarian. Downloaded languages are tracked in localStorage.
+
+### Scoring Configuration
+
+- **Preferred Jobs** — occupations that grant a +10 scoring bonus in Musixplora and Normdata matching (e.g., Komponist, Dirigent)
+- **Aliases** — character replacement rules (e.g., `ß → ss`) applied to search queries before sending
 
 ## Project Structure
 
@@ -101,22 +129,53 @@ src/
 │   ├── StepEntities.jsx         LLM entity detection
 │   ├── StepMusixplora.jsx       Database match review
 │   ├── StepNormdata.jsx         Authority data search + export
-│   ├── LLMSettingsModal.jsx     LLM provider configuration
-│   └── ui.jsx                   Shared UI components
+│   ├── StepReview.jsx           JSON / MusXplora export
+│   ├── SessionSidebar.jsx       Session list sidebar
+│   ├── SettingsPanel.jsx        Full settings (aliases, jobs, LLM, design)
+│   ├── EntitySearchModal.jsx    Standalone search tool (Musixplora + Normdata)
+│   ├── FirstSetupModal.jsx      First-time LLM key setup
+│   ├── LLMSettingsModal.jsx     LLM provider/model/prompt config
+│   ├── AutoModeErrorModal.jsx   Quota error with retry UI
+│   ├── AiErrorModal.jsx         Generic AI error display
+│   └── ui.jsx                   Shared UI components (EntityTag, Badge, Btn, etc.)
 ├── data/
-│   ├── initialState.js          Sample data and constants
+│   ├── initialState.js          Constants, entity types, defaults
 │   └── languages.js             OCR language list
 ├── hooks/
 │   ├── usePipelineState.js      Central state management
-│   └── useLLMSettings.js        LLM config persistence
+│   ├── useLLMSettings.js        LLM config persistence (localStorage)
+│   ├── useSessions.js           Session CRUD (localStorage)
+│   ├── useAutoMode.js           Auto-mode progress polling
+│   └── useTheme.js              Light/dark/system toggle
 └── services/
-    ├── musixploraService.js     Musixplora API client
-    ├── ocrService.js            Tesseract.js worker
+    ├── musixploraService.js     Musixplora API client + scoring
+    ├── ocrService.js            Tesseract.js worker wrapper
     ├── llmService.js            Multi-provider LLM client
-    └── normSearch.js            GND / VIAF / Wikidata search
+    ├── normSearch.js            GND / VIAF / Wikidata search + scoring
+    ├── aiMatchingService.js     LLM-assisted best-match selection
+    ├── autoModeService.js       Automated pipeline runner
+    └── imagePreprocessing.js    Canvas-based image preprocessing
 ```
 
-State is managed locally via React hooks and drilled as props. No global state library — the two custom hooks (`usePipelineState`, `useLLMSettings`) hold all application state, with localStorage for LLM settings and downloaded language tracking.
+State is managed locally via React hooks and drilled as props. No global state library — the two custom hooks (`usePipelineState`, `useLLMSettings`) hold all application state, with localStorage for persistence.
+
+## GitHub Pages Deployment
+
+The app can be deployed to GitHub Pages. A pre-configured GitHub Actions workflow builds and deploys automatically on pushes to the `main` branch.
+
+### Manual Setup
+
+1. Go to your repository **Settings → Pages**
+2. Under **Source**, select **GitHub Actions**
+3. Push to `main` — the workflow will build and deploy automatically
+
+The deployed site uses relative paths, so it works from any sub-path (e.g., `https://<user>.github.io/PosterOCR/`).
+
+### Production Notes
+
+- **Musixplora API** — in production, the app fetches directly from `https://musixplora.de` (no proxy needed)
+- **CORS** — all authority endpoints (lobid, VIAF, Wikidata) support browser CORS
+- **LLM keys** — sent directly from the browser; no backend involved
 
 ## Architecture
 
@@ -127,15 +186,15 @@ usePipelineState          useLLMSettings
        │                       │
        └─────── App ───────────┘
                    │
-        ┌──────────┼──────────┐
-        ▼          ▼          ▼
-    StepOCR   StepEntities  StepMusixplora  StepNormdata
-       │           │              │               │
-       ▼           ▼              ▼               ▼
-  ocrService   llmService  musixploraService  normSearch
-  (Tesseract)  (Anthropic/  (musixplora.de/    (lobid.org/
-                OpenAI/      Server/            VIAF/
-                Gemini/      sendQuery.php)     Wikidata)
+        ┌──────────┼──────────┬──────────┬──────────┐
+        ▼          ▼          ▼          ▼          ▼
+    StepOCR   StepEntities  StepMx    StepNorm    StepReview
+       │           │          │          │
+       ▼           ▼          ▼          ▼
+  ocrService   llmService  mxService  normSearch
+  (Tesseract)  (Anthropic/ (musixplora (lobid/
+                OpenAI/     .de/API)    VIAF/
+                Gemini/                 Wikidata)
                 Mistral/
                 Ollama)
 ```
@@ -147,10 +206,8 @@ usePipelineState          useLLMSettings
 | Endpoint | `musixplora.de/Server/sendQuery.php` |
 | Method | `POST` (form-encoded) |
 | Entity type mapping | `person`→Personen (tab 0), `group`→Institutionen (tab 1), `place`→Orte (tab 3), `event`/`time`→Ereignisse (tab 5), `other`→Sachen (tab 6) |
-| Alias handling | Search queries are rewritten using user-defined variant rules before sending |
-| CORS | Bypassed in development via Vite proxy (`/musixplora` → `https://musixplora.de`) |
-
-Search results include the Musixplora entity ID, display name, and type label. No confidence score is provided by the API — the score column is hidden when unavailable.
+| Scoring | Name similarity (80%) + date plausibility (20%) + job bonus (+10) |
+| CORS | Vite proxy in dev, direct fetch in production |
 
 ### Normdaten Search
 
@@ -160,28 +217,15 @@ Search results include the Musixplora entity ID, display name, and type label. N
 | VIAF | `viaf.org/viaf/AutoSuggest` + cluster fetch | `nametype=personal` |
 | Wikidata | `wikidata.org/w/api.php` (wbsearchentities + wbgetentities) | `instance of (P31) = human (Q5)` |
 
-Search uses multiple name variants (original, last-name-only, reversed) and deduplicates results by cross-referenced IDs. Scoring considers birth/death dates relative to extracted event year, location hints, and data completeness.
+Search uses multiple name variants and deduplicates by cross-referenced IDs. Scoring considers birth/death dates, location hints, name variants, and preferred jobs.
 
 ## Limitations
 
 - **No TypeScript** — the project uses plain JSX
 - **No tests** — no test framework or test files exist
 - **No backend proxy** — LLM API keys are sent directly from the browser
-- **Musixplora CORS** — the API requires a proxy in production (Vite dev server handles this automatically); for production builds, deploy a reverse proxy or use the app from a same-origin context
 - **No CSS framework** — styling is inline with CSS custom properties for theming
-- **State resets on refresh** — only LLM settings and downloaded languages persist across sessions
-
-## Vision
-
-Musixplora Pipeline is designed for music historians, archivists, and librarians who work with digitized concert programs and need a reproducible, transparent workflow from scanned poster to structured authority data.
-
-The app is in active development. Planned directions include:
-
-- TypeScript migration
-- Worker pool for repeated OCR
-- Export formats beyond JSON (CSV, MARC, RDF)
-- Persistent project state via IndexedDB
-- Keyboard shortcuts and accessibility improvements
+- **localStorage-only persistence** — sessions and settings survive page reload but not browser data clearance
 
 ## License
 
