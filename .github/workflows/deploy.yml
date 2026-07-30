@@ -76,3 +76,40 @@ jobs:
         with:
           name: PosterOCR-Windows
           path: release/
+
+  release:
+    needs: [electron-linux, electron-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: PosterOCR-Linux
+          path: release/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: PosterOCR-Windows
+          path: release/windows
+      - name: Build tag
+        id: tag
+        run: |
+          echo "version=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          echo "tag=v$(node -p "require('./package.json').version")+build.${{ github.run_number }}" >> $GITHUB_OUTPUT
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "PosterOCR ${{ steps.tag.outputs.version }} (Build ${{ github.run_number }})"
+          body: |
+            Automatischer Build von [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+
+            **Downloads:**
+            - **Windows** — `.exe` (NSIS-Installer) im `PosterOCR-Windows`-Ordner
+            - **Linux** — `.AppImage` und `.deb` im `PosterOCR-Linux`-Ordner
+          files: |
+            release/linux/*
+            release/windows/*
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

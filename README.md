@@ -4,6 +4,32 @@
 
 A browser-based pipeline that transforms scanned concert posters and historical event programs into structured JSON metadata — entirely client-side.
 
+## How to use
+
+### Web App (GitHub Pages)
+
+The app is available at **[https://mitaku-dev.github.io/PosterOCR/](https://mitaku-dev.github.io/PosterOCR/)** — no installation required. Opens in any modern browser. On first launch you'll be guided through adding an LLM API key.
+
+### Desktop App (Electron)
+
+Pre-built installers are available as **downloadable artifacts** from the [GitHub Actions](https://github.com/mitaku-dev/PosterOCR/actions) page:
+
+1. Go to **Actions → Deploy to GitHub Pages → latest run**
+2. Scroll down to **Artifacts**
+3. Download **PosterOCR-Windows** (`.exe` installer) or **PosterOCR-Linux** (`.AppImage` / `.deb`)
+4. Extract and run — no browser or server needed
+
+### Build from source
+
+```bash
+git clone https://github.com/mitaku-dev/PosterOCR.git
+cd PosterOCR
+npm install
+npm run dev        # development server at http://localhost:5173
+npm run build      # production build → dist/
+npm run build:electron  # package as Electron app → release/
+```
+
 ## Pipeline
 
 ```
@@ -68,29 +94,6 @@ Review all matched and enriched data, then export as JSON with Musixplora IDs an
 | Icons | Lucide React | ^1.8.0 |
 
 All processing runs in the browser — no server required. OCR uses Tesseract WASM, LLM calls go directly to provider APIs, and authority data is fetched from public REST endpoints.
-
-## Getting Started
-
-```bash
-npm install
-npm run dev
-```
-
-The dev server starts at `http://localhost:5173`.
-
-### Build
-
-```bash
-npm run build        # production build → dist/
-npm run preview      # preview the production build locally
-```
-
-### Electron Desktop App (optional)
-
-```bash
-npm run dev:electron     # dev mode with Electron window
-npm run build:electron   # package as Electron installer (requires build tools)
-```
 
 ## Configuration
 
@@ -158,24 +161,6 @@ src/
 ```
 
 State is managed locally via React hooks and drilled as props. No global state library — the two custom hooks (`usePipelineState`, `useLLMSettings`) hold all application state, with localStorage for persistence.
-
-## GitHub Pages Deployment
-
-The app can be deployed to GitHub Pages. A pre-configured GitHub Actions workflow builds and deploys automatically on pushes to the `main` branch.
-
-### Manual Setup
-
-1. Go to your repository **Settings → Pages**
-2. Under **Source**, select **GitHub Actions**
-3. Push to `main` — the workflow will build and deploy automatically
-
-The deployed site uses relative paths, so it works from any sub-path (e.g., `https://<user>.github.io/PosterOCR/`).
-
-### Production Notes
-
-- **Musixplora API** — in production, the app fetches directly from `https://musixplora.de` (no proxy needed)
-- **CORS** — all authority endpoints (lobid, VIAF, Wikidata) support browser CORS
-- **LLM keys** — sent directly from the browser; no backend involved
 
 ## Architecture
 
