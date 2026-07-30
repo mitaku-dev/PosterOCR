@@ -15,6 +15,9 @@ export default function FirstSetupModal({ llmSettings, onDone }) {
   function handleAddKey() {
     if (keyInput.trim()) {
       addApiKey(selectedProvider, keyInput.trim());
+      if (selectedProvider !== llmSettings.provider) {
+        llmSettings.updateProvider(selectedProvider);
+      }
       setKeyInput('');
     }
   }

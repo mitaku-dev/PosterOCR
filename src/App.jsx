@@ -10,6 +10,8 @@ import FirstSetupModal from './components/FirstSetupModal';
 import AutoModeErrorModal from './components/AutoModeErrorModal';
 import AiErrorModal from './components/AiErrorModal';
 import EntitySearchModal from './components/EntitySearchModal';
+import StepTutorial from './components/StepTutorial';
+import { TUTORIAL_STEP_LABELS } from './data/tutorials';
 import SessionSidebar from './components/SessionSidebar';
 import { usePipelineState } from './hooks/usePipelineState';
 import { useLLMSettings } from './hooks/useLLMSettings';
@@ -29,6 +31,33 @@ export default function App() {
   const [showFirstSetup, setShowFirstSetup] = useState(!llmSettings.hasAnyKeys);
   const [aiError, setAiError] = useState(null);
   const autoErrorShown = useRef(null);
+
+  const TUTORIALS_SEEN_KEY = 'poster_tutorials_seen';
+  function loadTutorialsSeen() {
+    try { return JSON.parse(localStorage.getItem(TUTORIALS_SEEN_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveTutorialsSeen(seen) {
+    localStorage.setItem(TUTORIALS_SEEN_KEY, JSON.stringify(seen));
+  }
+  const [tutorialsSeen, setTutorialsSeen] = useState(loadTutorialsSeen);
+  const [showTutorial, setShowTutorial] = useState(() =>
+    !tutorialsSeen.includes(state.step) ? state.step : null
+  );
+
+  useEffect(() => {
+    if (!tutorialsSeen.includes(state.step)) {
+      setShowTutorial(state.step);
+    }
+  }, [state.step]);
+
+  function dismissTutorial() {
+    if (showTutorial === null) return;
+    const next = [...new Set([...tutorialsSeen, showTutorial])];
+    setTutorialsSeen(next);
+    saveTutorialsSeen(next);
+    setShowTutorial(null);
+  }
 
   useEffect(() => {
     if (autoMode.error && autoMode.error !== autoErrorShown.current && !autoMode.running) {
@@ -192,6 +221,18 @@ export default function App() {
                 ⌕ Suche
               </button>
               <button
+                onClick={() => setShowTutorial(state.step)}
+                title="Hilfe zu diesem Schritt"
+                style={{
+                  padding: '5px 9px', borderRadius: 7, fontSize: 13,
+                  border: '0.5px solid var(--border-md)', background: showTutorial !== null ? '#E6F1FB' : 'transparent',
+                  color: showTutorial !== null ? '#185FA5' : 'var(--fg-muted)',
+                  cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600,
+                }}
+              >
+                ?
+              </button>
+              <button
                 onClick={() => setShowSettings(true)}
                 style={{
                   padding: '5px 11px', borderRadius: 7, fontSize: 12,
@@ -267,6 +308,9 @@ export default function App() {
             )}
           </div>
           <PipelineNav step={state.step} stepDone={state.stepDone} onSelect={state.setStep} />
+          {showTutorial !== null && showTutorial === state.step && (
+            <StepTutorial step={state.step} onDismiss={dismissTutorial} />
+          )}
           {steps[state.step]}
         </div>
       </div>
